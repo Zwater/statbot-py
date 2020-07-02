@@ -78,35 +78,43 @@ async def handleInfoCommand(args, message, statusMessage):
     # being a new user, fail gracefully and set it to NULL
     try:
         totalMsgs = list(infoResults[0].get_points())[0]['count'] # Total number of messages
-    except:
+    except Exception as e:
         success = False
         totalMsgs = 'NULL'
+        print(f'{e} while grabbing total messages')
     try:
         wkMsgs = list(infoResults[1].get_points())[0]['count'] # Messages this week
-    except:
+    except Exception as e:
         success = False
         wkMsgs = 'NULL'
+        print(f'{e} while grabbing this week\'s messages')
     try:
         avgMsgLen = list(infoResults[2].get_points())[0]['mean'] # Average Message length
-    except:
+    except Exception as e:
         success = False
         avgMsgLen = 'NULL'
+        print(f'{e} while getting the average message length')
     try:
         avgMsgsWk = list(infoResults[3].get_points())[0]['moving_average'] # Daily average messages
-    except:
+    except Exception as e:
         success = False
         avgMsgsWk = 'NULL'
+        print(f'{e} while getting the average daily messages')
     try:
         # We handle parsing this later, so don't bother getting the final number like the rest
         channelBreakdown = infoResults[4] # Breakdown per-channel of messages sent
-    except:
+    except Exception as e:
         success = False
         channelBreakdown = None
+        print(f'{e} while getting the channel breakdown')
+
     try:
+        handleXP(message)
         xp = list(infoResults[5].get_points())[0]['last'] # The user's XP. Calculated per 5-minute block of active time
-    except:
+    except Exception as e:
         success = False
         xp = 'NULL'
+        print(f'{e} while getting user\'s XP')
     try:
         # Get a markov-chain-generated sentence based on user's activity
         #
@@ -116,13 +124,13 @@ async def handleInfoCommand(args, message, statusMessage):
         # Sometimes the model returns nothing
         # Try again until we have something, or we've tried ten times. Whichever comes first
         #
-        while sentence is None or x == 0:
+        while sentence is None and x <= 10:
             sentence = model.make_sentence()
             x = x + 1
     except Exception as e:
         success = False
         sentence = 'NULL'
-        print(e)
+        print(f'{e} while generating markov sentence')
 
     if totalMsgs is not 'NULL':
         result = ''
@@ -147,6 +155,7 @@ async def handleInfoCommand(args, message, statusMessage):
         # Calculate the number of messages sent per XP
         # Roughly the average number of messages per 5 minutes
         #
+        print('calculating XP')
         xpPerMsg = round(totalMsgs / xp, 2)
     else:
         xpPerMsg = 'NULL'
@@ -432,7 +441,7 @@ async def on_message(message):
                 model = buildMarkovModel(target, message)
                 sentence = model.make_sentence()
                 x = 0
-                while sentence is None or x == 10:
+                while sentence is None and x <= 10:
                     # Same deal as before. Try to get a sentence from our markov model
                     # give up after ten tries
                     #
