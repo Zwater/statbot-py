@@ -178,14 +178,14 @@ def buildMarkovModel(member, message):
     # This queries InfluxDB for a random sample of 1000 messages from the last year from a user
     # then generates a markov chain model for it, and returns the model
     corpus = ''
-    query = influx.query(f'SELECT SAMPLE(messageText,1000)\
+    query = influx.query(f'SELECT SAMPLE(messageText,100000)\
             FROM chatMessage\
             WHERE serverID={message.guild.id}\
             AND authorID={member.id}\
-            AND TIME >= now() - 52w',database=f'{databasePrefix}_{message.guild.id}')
+            AND TIME >= now() - 156w',database=f'{databasePrefix}_{message.guild.id}')
     for item in (list(query.items()[0][1])):
         corpus += f"{item['sample']}\n"
-    markovModel = markovify.Text(corpus)
+    markovModel = markovify.Text(corpus, state_size=3)
     return markovModel
 
 def getUserFromInfoArgs(message, arg):
